@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AirConsole Clone</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🎮 AIR CONSOLE CLONE</h1>
+
+<div id="waitingScreen">
+
+    <h2 id="roomCode"></h2>
+
+    <h3>WAITING FOR PLAYERS...</h3>
+
+    <h2 id="playerCount">0 Players Joined</h2>
+
+    <button id="startBtn">
+        START
+    </button>
+
+</div>
+
+<div id="testScreen" style="display:none;">
+
+    <h2>PRESS ALL BUTTONS</h2>
+
+    <p id="left">❌ Left</p>
+    <p id="right">❌ Right</p>
+    <p id="up">❌ Up</p>
+    <p id="down">❌ Down</p>
+
+    <h2 id="ready"></h2>
+
+</div>
+
+<div id="menuScreen" style="display:none;">
+
+    <h1>🎮 GAME MENU</h1>
+
+    <div id="menu"></div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>

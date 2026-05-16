@@ -1,79 +1,113 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
 
-// Serve public folder
+const http = require("http").createServer(app);
+
+const io = require("socket.io")(http, {
+    cors: {
+        origin: "*"
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+
 app.use(express.static("public"));
 
-// Store player rooms
-let players = {};
+let room = {
+    code: Math.floor(100000 + Math.random() * 900000),
+    players: [],
+    menuIndex: 0
+};
 
-// Socket connection
+const games = [
+    "🏎️ Racing",
+    "🃏 UNO",
+    "🐍 Snake"
+];
+
 io.on("connection", (socket) => {
 
-    console.log("Player connected:", socket.id);
+    console.log("NEW CONNECTION:", socket.id);
 
-    // Join room
-    socket.on("join-room", (room) => {
+    // SEND ROOM DATA
+    socket.emit("roomData", room);
 
-        socket.join(room);
+    // PLAYER JOIN
+    socket.on("joinRoom", (name) => {
 
-        players[socket.id] = room;
-
-        const playerCount =
-            io.sockets.adapter.rooms.get(room)?.size || 0;
-
-        io.to(room).emit("player-count", playerCount);
-
-        console.log(`${socket.id} joined ${room}`);
-    });
-
-    // Controller movement
-    socket.on("controller-move", (direction) => {
-
-        const room = players[socket.id];
-
-        if (room) {
-
-            socket.to(room).emit(
-                "controller-update",
-                direction
+        const playerExists =
+            room.players.find(
+                p => p.id === socket.id
             );
 
+        if(!playerExists){
+
+            room.players.push({
+                id: socket.id,
+                name
+            });
         }
+
+        console.log(room.players);
+
+        io.emit("updatePlayers", room.players);
     });
 
-    // Disconnect
-    socket.on("disconnect", () => {
+    // START TEST
+    socket.on("startSetup", () => {
 
-        const room = players[socket.id];
+        io.emit("changeState", {
+            state: "testing"
+        });
+    });
 
-        delete players[socket.id];
+    // BUTTON TEST
+    socket.on("buttonPress", (button) => {
 
-        if (room) {
+        io.emit("buttonDetected", button);
+    });
 
-            const playerCount =
-                io.sockets.adapter.rooms.get(room)?.size || 0;
+    // MENU MOVEMENT
+    socket.on("menuMove", (dir) => {
 
-            io.to(room).emit("player-count", playerCount);
+        if(dir === "right"){
 
+            room.menuIndex++;
+
+            if(room.menuIndex >= games.length)
+                room.menuIndex = 0;
         }
 
-        console.log("Disconnected:", socket.id);
+        if(dir === "left"){
 
+            room.menuIndex--;
+
+            if(room.menuIndex < 0)
+                room.menuIndex = games.length - 1;
+        }
+
+        io.emit("updateMenu", {
+            index: room.menuIndex,
+            games
+        });
+    });
+
+    // DISCONNECT
+    socket.on("disconnect", () => {
+
+        console.log("Disconnected");
+
+        room.players =
+            room.players.filter(
+                p => p.id !== socket.id
+            );
+
+        io.emit("updatePlayers", room.players);
     });
 
 });
 
-// IMPORTANT FOR RENDER
-const PORT = process.env.PORT || 3000;
+http.listen(PORT, "0.0.0.0", () => {
 
-server.listen(PORT, () => {
-
-    console.log("Server running");
-
+    console.log("RUNNING ON PORT " + PORT);
 });
